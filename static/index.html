@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Multiplayer Game</title>
+</head>
+
+<body>
+  <canvas id="canvas"></canvas>
+    <script src="js/socket.io.js"></script>
+    <script>
+        var socket = io();
+        socket.on("ball created", function(b){
+            ball = b;
+        });
+        socket.on("ball moved", function(b){
+            ball = b;
+        });
+        var c = document.getElementById('canvas');
+        var ctx = c.getContext("2d");
+        c.width = window.innerWidth; c.height = window.innerHeight;
+        function gameLoop(){
+            ctx.fillStyle = "000000";
+            ctx.strokeStyle = "FFFFFF";
+            ctx.fillRect(0,0,c.width, c.height);
+            if(ball){
+                ctx.stokeRect(ball.x, ball.y, 10, 10);
+            }
+            window.requestAnimationFrame(gameLoop);
+        }
+        gameLoop();
+    </script>
+</body>
+
+</html>
