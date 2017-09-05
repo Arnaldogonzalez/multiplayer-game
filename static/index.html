@@ -2,37 +2,110 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Multiplayer Game</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Multiplayer Game</title>
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    .gameover {
+      position: fixed;
+      width: 100vw;
+      height: 100vh;
+      font-size: 40px;
+      color: #fff;
+      padding-top: 100px;
+      text-align: center;
+    }
+  </style>
 </head>
 
 <body>
   <canvas id="canvas"></canvas>
-    <script src="js/socket.io.js"></script>
-    <script>
-        var socket = io();
-        socket.on("ball created", function(b){
-            ball = b;
-        });
-        socket.on("ball moved", function(b){
-            ball = b;
-        });
-        var c = document.getElementById('canvas');
-        var ctx = c.getContext("2d");
-        c.width = window.innerWidth; c.height = window.innerHeight;
-        function gameLoop(){
-            ctx.fillStyle = "000000";
-            ctx.strokeStyle = "FFFFFF";
-            ctx.fillRect(0,0,c.width, c.height);
-            if(ball){
-                ctx.stokeRect(ball.x, ball.y, 10, 10);
-            }
-            window.requestAnimationFrame(gameLoop);
+
+
+  <script src="/js/socket.io.js"></script>
+  <script src="js/paddle.js">
+  </script>
+  <script>
+    var socket = io();
+    var ball = null;
+    var opponent = null;
+    var player = null;
+    var leftcont = 0;
+    var rightcont = 0;
+    var newDiv;
+    var c = document.getElementById('canvas');
+    var ctx = c.getContext('2d');
+    c.width = 600;
+    c.height = 400;
+
+    socket.on('ball created', function(b) {
+      ball = b;
+    });
+    socket.on('ball moved', function(b) {
+      ball = b.ball;
+      leftcont = b.leftcont;
+      rightcont = b.rightcont;
+    });
+    socket.on('player created', function(msg) {
+      if (player === null) {
+        player = new paddle(msg.x, msg.y, ctx, c)
+      }
+    });
+    socket.on('player move', function(msg) { //{12345:{x,y},    95191:{x,y}}
+      //  console.log(msg);
+      if (opponent === null) {
+        opponent = new paddle(100, 50, ctx, c);
+      }
+      for (var socketid in msg) {
+        if (socket.id != socketid) {
+          opponent.x = msg[socketid].x;
+          opponent.y = msg[socketid].y;
+
         }
-        gameLoop();
-    </script>
+      }
+    });
+
+    function gameLoop() {
+      ctx.fillStyle = "#000000";
+      ctx.strokeStyle = "#FFFFFF";
+      ctx.fillRect(0, 0, c.width, c.height);
+      if (ball) {
+        ctx.strokeRect(ball.x, ball.y, 10, 10);
+        //  console.log('si');
+      }
+      if (player) {
+        socket.emit('player move', {
+          x: player.x,
+          y: player.y
+        });
+        player.update();
+        player.render();
+      }
+      if (opponent) {
+        opponent.render();
+      }
+      ctx.font = "30px Arial";
+      ctx.strokeText(leftcont, 20, 30);
+      ctx.strokeText(rightcont, 560, 30);
+
+      socket.on('game over', function(msg) {
+        var newDiv = document.createElement("div");
+        newDiv.innerHTML = msg;
+        document.body.appendChild(newDiv);
+        newDiv.classList.add('gameover');
+      })
+
+      window.requestAnimationFrame(gameLoop);
+    }
+    gameLoop();
+  </script>
 </body>
 
 </html>
